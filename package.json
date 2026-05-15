@@ -1,0 +1,26 @@
+{
+  "name": "awana",
+  "version": "0.1.0",
+  "bin": {
+    "awana": "bin/awana.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "cdk": "cdk",
+    "frontend:deploy": "bash scripts/deploy-website.sh",
+    "logs:set-retention": "bash scripts/set-log-retention.sh"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.19",
+    "aws-cdk": "^2.1121.0",
+    "esbuild": "^0.28.0",
+    "ts-node": "^10.9.2",
+    "typescript": "5.7.3"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "^2.253.1",
+    "cdk-nag": "^2.38.2",
+    "constructs": "^10.6.0"
+  }
+}

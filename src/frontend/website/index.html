@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<!--
+  SAMPLE CODE — NOT INTENDED FOR PRODUCTION USE.
+  This code is provided as a reference implementation only.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AWANA</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <div class="header-left">
+      <h1>⚡ AWANA</h1>
+    </div>
+    <div class="user-info">
+      <span class="user-email" id="userEmail" aria-live="polite"></span>
+      <button id="logoutBtn" type="button" class="btn-ghost" aria-label="Log out of AWANA">Sign out</button>
+    </div>
+  </header>
+
+  <div class="tab-bar">
+    <button class="tab active" data-tab="results" type="button">Results</button>
+    <button class="tab" data-tab="preferences" type="button">Preferences</button>
+    <button class="tab" data-tab="accounts" type="button">Accounts</button>
+  </div>
+
+  <!-- ─── Results Tab ─── -->
+  <main id="tab-results" class="tab-content active">
+    <div class="container">
+      <div class="section-header">
+        <h2>Recommendations</h2>
+        <div class="section-header-actions">
+          <select id="accountFilter" class="account-selector" aria-label="Filter results by account">
+            <option value="">All Accounts</option>
+          </select>
+          <div class="toggle-group" role="group" aria-label="Filter results by relevance">
+            <button type="button" class="toggle-btn" data-filter="all">All</button>
+            <button type="button" class="toggle-btn active" data-filter="relevant">Relevant</button>
+            <button type="button" class="toggle-btn" data-filter="not-relevant">Not relevant</button>
+          </div>
+          <button id="refreshResultsBtn" type="button" class="btn-ghost">↻ Refresh</button>
+        </div>
+      </div>
+      <div id="resultsList" class="results-list" aria-live="polite">
+        <p class="empty-state">Loading results…</p>
+      </div>
+      <div id="resultsLoadMoreWrapper" class="load-more-wrapper hidden">
+        <button id="loadMoreResultsBtn" type="button" class="btn-ghost">Load more</button>
+      </div>
+      <div id="resultsSentinel" aria-hidden="true"></div>
+    </div>
+  </main>
+
+  <!-- ─── Preferences Tab ─── -->
+  <main id="tab-preferences" class="tab-content">
+    <div class="container">
+      <div class="section-header">
+        <h2>Your Preferences</h2>
+        <div class="section-header-actions">
+          <select id="prefAccountScope" class="account-selector" aria-label="Preference account scope">
+            <option value="">Global (all accounts)</option>
+          </select>
+          <button id="addPrefBtn" type="button" class="btn-primary">+ Add</button>
+        </div>
+      </div>
+      <div id="prefForm" class="pref-form hidden">
+        <textarea id="prefInput" rows="2" placeholder="e.g. I'm interested in serverless architectures and cost optimization…" aria-label="Preference statement"></textarea>
+        <div class="form-actions">
+          <button id="prefSaveBtn" type="button" class="btn-primary">Save</button>
+          <button id="prefCancelBtn" type="button" class="btn-ghost">Cancel</button>
+        </div>
+      </div>
+      <div id="prefList" class="pref-list" aria-live="polite">
+        <p class="empty-state">No preferences found. Add one to get started.</p>
+      </div>
+    </div>
+  </main>
+
+  <!-- ─── Accounts Tab ─── -->
+  <main id="tab-accounts" class="tab-content">
+    <div class="container">
+      <div class="section-header">
+        <h2>Registered Accounts</h2>
+        <button id="addAccountBtn" type="button" class="btn-primary">+ Add Account</button>
+      </div>
+      <div id="addAccountForm" class="account-form hidden">
+        <div class="form-row">
+          <label for="accountSearchInput">Search Organization Accounts</label>
+          <input id="accountSearchInput" type="text" placeholder="Type to search by name or account ID…" aria-label="Search organization accounts" autocomplete="off" />
+          <div id="accountSearchResults" class="account-search-results hidden" role="listbox" aria-label="Available organization accounts"></div>
+          <p id="accountSearchEmpty" class="account-search-empty hidden">No matching accounts found.</p>
+          <p id="accountSearchLoading" class="account-search-empty hidden">Loading organization accounts…</p>
+          <p id="accountSearchNoOrg" class="account-search-empty hidden">AWS Organizations is not enabled. Only the deployment account is available.</p>
+        </div>
+        <div id="accountSelectedInfo" class="account-selected-info hidden">
+          <div class="form-row">
+            <label>Account ID</label>
+            <div id="selectedAccountId" class="selected-value"></div>
+          </div>
+          <div class="form-row">
+            <label for="accountNameInput">Display Name</label>
+            <input id="accountNameInput" type="text" placeholder="e.g. Production" aria-label="Account display name" />
+          </div>
+        </div>
+        <div class="form-actions">
+          <button id="accountSaveBtn" type="button" class="btn-primary" disabled>Add Account</button>
+          <button id="accountCancelBtn" type="button" class="btn-ghost">Cancel</button>
+        </div>
+      </div>
+      <div id="accountsList" class="accounts-list" aria-live="polite">
+        <p class="empty-state">Loading accounts…</p>
+      </div>
+    </div>
+  </main>
+
+  <!-- ─── Edit Account Modal ─── -->
+  <div id="editAccountModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="editAccountModalTitle">
+    <div class="modal">
+      <h3 id="editAccountModalTitle">Edit Account</h3>
+      <div class="form-row">
+        <label for="editAccountName">Display Name</label>
+        <input id="editAccountName" type="text" aria-label="Edit account display name" />
+      </div>
+      <div class="form-actions">
+        <button id="editAccountSaveBtn" type="button" class="btn-primary">Save</button>
+        <button id="editAccountCancelBtn" type="button" class="btn-ghost">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Edit Preference Modal ─── -->
+  <div id="editModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="editModalTitle">
+    <div class="modal">
+      <h3 id="editModalTitle">Edit Preference</h3>
+      <textarea id="editInput" rows="3" aria-label="Edit preference statement"></textarea>
+      <div class="form-actions">
+        <button id="editSaveBtn" type="button" class="btn-primary">Save</button>
+        <button id="editCancelBtn" type="button" class="btn-ghost">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="auth.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

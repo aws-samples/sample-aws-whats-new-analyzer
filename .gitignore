@@ -1,0 +1,60 @@
+# TypeScript build output
+*.js
+*.d.ts
+*.generated.ts
+docs/
+# Keep these JS source files (not TypeScript output)
+!src/frontend/**/*.js
+!jest.config.js
+
+# CDK
+.cdk.staging
+cdk.out
+cdk.context.json
+
+# Node
+node_modules
+.nyc_output
+coverage
+
+# Environment
+.env
+.env.*
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+ 
+# Scratch / test directories
+mcp_test/
+.kiro_tmp/
+.hypothesis/
+
+# Runtime state
+.delete-app-state
+
+# IDE / tooling
+.vscode/
+.kiro/
+
+# Diagrams (binary)
+*.drawio
+
+# macOS
+.DS_Store
+
+# homes files
+holmes_input
