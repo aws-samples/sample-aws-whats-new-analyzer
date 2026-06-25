@@ -81,6 +81,8 @@ Use below script and follow instructions
 ./scripts/project-setup.sh
 ```
 
+The setup script will automatically create a local `config.ts` from `config.example.ts` on first run. Edit `config.ts` to customize settings (inference profile, log retention, allowed email domains, etc.) before deploying.
+
 If deploying manually without the setup script, pass the required context keys on the first run (see [Configuration](#configuration)):
 
 ```bash
@@ -155,7 +157,7 @@ npx cdk deploy --all \
 
 These are persisted to `cdk.context.json` by the setup script so that `cdk deploy --all` and `delete-app.sh` work without arguments on subsequent runs.
 
-Other configuration lives in `config.ts`:
+Other configuration lives in `config.ts` (created from `config.example.ts` by the setup script — not committed to git):
 
 | Setting | Description |
 |---|---|
@@ -249,7 +251,7 @@ Messages accumulate in the queue until the issue is resolved and the event sourc
 
 ```
 ├── bin/                        CDK app entry point
-├── config.ts                   Global configuration
+├── config.example.ts              Global configuration template (copy to config.ts)
 ├── lib/                        CDK stack definitions
 │   ├── agents/                 Agent prompt definitions (deployed to S3)
 │   ├── foundation-stack.ts     DynamoDB tables, S3 buckets, SNS alerts, permissions boundary

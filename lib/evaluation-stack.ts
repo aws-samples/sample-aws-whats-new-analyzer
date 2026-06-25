@@ -15,6 +15,7 @@ import * as cdk from 'aws-cdk-lib';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as custom from 'aws-cdk-lib/custom-resources';
+import * as bedrockagentcore from 'aws-cdk-lib/aws-bedrockagentcore';
 import * as s3assets from 'aws-cdk-lib/aws-s3-assets';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as s3deploy from 'aws-cdk-lib/aws-s3-deployment';
@@ -119,8 +120,6 @@ export class EvaluationStack extends cdk.Stack {
     runtimeRole.addManagedPolicy(this.createRuntimeBasePolicy('AgentRuntime', AgentConfig));
     agentAsset.grantRead(runtimeRole);
 
-    const allRuntimeRoleArns = [runtimeRole.roleArn];
-
     runtimeRole.addToPolicy(new iam.PolicyStatement({
       actions: ['s3:GetObject'],
       resources: [props.promptsBucket.arnForObjects('config/*')],
@@ -167,105 +166,40 @@ export class EvaluationStack extends cdk.Stack {
       ],
     }));
 
-    // ─── AgentCore Runtime (custom resource) ───
+    // ─── AgentCore Runtime (L1 CfnRuntime construct) ───
 
-    const agentRuntime = new custom.AwsCustomResource(this, 'AgentRuntime', {
-      onCreate: {
-        service: 'bedrock-agentcore-control',
-        action: 'CreateAgentRuntime',
-        parameters: {
-          agentRuntimeName: AgentConfig.runtimeName,
-          description: AgentConfig.description,
-          agentRuntimeArtifact: {
-            codeConfiguration: {
-              code: { s3: { bucket: agentAsset.s3BucketName, prefix: agentAsset.s3ObjectKey } },
-              runtime: 'PYTHON_3_13',
-              entryPoint: ['agent.py'],
-            },
-          },
-          environmentVariables: {
-            AWS_REGION: this.region,
-            PROMPTS_BUCKET: props.promptsBucket.bucketName,
-            PROMPTS_KEY: 'config/prompts.json',
-            LOG_LEVEL: AgentConfig.logLevel,
-            PREFERENCES_TABLE: props.preferencesTable.tableName,
-            INVENTORY_BUCKET: props.inventoryBucket.bucketName,
-            ENABLE_MEMORY: 'true',
-            MEMORY_ID: memoryId,
-          },
-          networkConfiguration: { networkMode: 'PUBLIC' },
-          protocolConfiguration: { serverProtocol: 'HTTP' },
-          roleArn: runtimeRole.roleArn,
-          tags: { type: AgentConfig.type, project: GlobalConfig.deploymentPrefix },
+    const agentRuntime = new bedrockagentcore.CfnRuntime(this, 'AgentRuntime', {
+      agentRuntimeName: AgentConfig.runtimeName,
+      description: AgentConfig.description,
+      agentRuntimeArtifact: {
+        codeConfiguration: {
+          code: { s3: { bucket: agentAsset.s3BucketName, prefix: agentAsset.s3ObjectKey } },
+          runtime: 'PYTHON_3_13',
+          entryPoint: ['agent.py'],
         },
-        physicalResourceId: custom.PhysicalResourceId.fromResponse('agentRuntimeId'),
       },
-      onUpdate: {
-        service: 'bedrock-agentcore-control',
-        action: 'UpdateAgentRuntime',
-        parameters: {
-          agentRuntimeId: new custom.PhysicalResourceIdReference(),
-          description: AgentConfig.description,
-          agentRuntimeArtifact: {
-            codeConfiguration: {
-              code: { s3: { bucket: agentAsset.s3BucketName, prefix: agentAsset.s3ObjectKey } },
-              runtime: 'PYTHON_3_13',
-              entryPoint: ['agent.py'],
-            },
-          },
-          environmentVariables: {
-            AWS_REGION: this.region,
-            PROMPTS_BUCKET: props.promptsBucket.bucketName,
-            PROMPTS_KEY: 'config/prompts.json',
-            LOG_LEVEL: AgentConfig.logLevel,
-            PREFERENCES_TABLE: props.preferencesTable.tableName,
-            INVENTORY_BUCKET: props.inventoryBucket.bucketName,
-            ENABLE_MEMORY: 'true',
-            MEMORY_ID: memoryId,
-          },
-          networkConfiguration: { networkMode: 'PUBLIC' },
-          protocolConfiguration: { serverProtocol: 'HTTP' },
-          roleArn: runtimeRole.roleArn,
-        },
-        physicalResourceId: custom.PhysicalResourceId.fromResponse('agentRuntimeId'),
+      environmentVariables: {
+        AWS_REGION: this.region,
+        PROMPTS_BUCKET: props.promptsBucket.bucketName,
+        PROMPTS_KEY: 'config/prompts.json',
+        LOG_LEVEL: AgentConfig.logLevel,
+        PREFERENCES_TABLE: props.preferencesTable.tableName,
+        INVENTORY_BUCKET: props.inventoryBucket.bucketName,
+        ENABLE_MEMORY: 'true',
+        MEMORY_ID: memoryId,
       },
-      onDelete: {
-        service: 'bedrock-agentcore-control',
-        action: 'DeleteAgentRuntime',
-        parameters: { agentRuntimeId: new custom.PhysicalResourceIdReference() },
-      },
-      policy: custom.AwsCustomResourcePolicy.fromStatements([
-        // Broad AgentCore permissions — the service requires actions across
-        // runtime/*, workload-identity-directory/*, and endpoint/* resources.
-        // Scoped to account + region; tighten once the full action set is known.
-        new iam.PolicyStatement({
-          actions: ['bedrock-agentcore:*'],
-          resources: [`arn:aws:bedrock-agentcore:${this.region}:${this.account}:*`],
-        }),
-        new iam.PolicyStatement({ actions: ['iam:PassRole'], resources: allRuntimeRoleArns }),
-        new iam.PolicyStatement({
-          actions: ['iam:CreateServiceLinkedRole'],
-          resources: [
-            `arn:aws:iam::${this.account}:role/aws-service-role/network.bedrock-agentcore.amazonaws.com/*`,
-            `arn:aws:iam::${this.account}:role/aws-service-role/runtime-identity.bedrock-agentcore.amazonaws.com/*`,
-            `arn:aws:iam::${this.account}:role/aws-service-role/bedrock-agentcore.amazonaws.com/*`,
-          ],
-          conditions: { StringLike: { 'iam:AWSServiceName': '*.bedrock-agentcore.amazonaws.com' } },
-        }),
-        new iam.PolicyStatement({
-          actions: ['s3:GetObject'],
-          resources: [agentAsset.bucket.arnForObjects('*')],
-        }),
-      ]),
-      installLatestAwsSdk: true,
+      networkConfiguration: { networkMode: 'PUBLIC' },
+      protocolConfiguration: 'HTTP',
+      roleArn: runtimeRole.roleArn,
+      tags: { type: AgentConfig.type, project: GlobalConfig.deploymentPrefix },
     });
 
-    this.runtimeArn = agentRuntime.getResponseField('agentRuntimeArn');
+    this.runtimeArn = agentRuntime.attrAgentRuntimeArn;
     this.memoryId = memoryId;
 
     // ─── Agent log group (created by AgentCore — import and set retention) ───
 
-    const agentRuntimeId = agentRuntime.getResponseField('agentRuntimeId');
+    const agentRuntimeId = agentRuntime.attrAgentRuntimeId;
     const agentLogGroupName = `/aws/bedrock-agentcore/runtimes/${agentRuntimeId}-DEFAULT`;
 
     new custom.AwsCustomResource(this, 'AgentLogGroupRetention', {

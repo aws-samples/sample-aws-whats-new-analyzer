@@ -13,6 +13,23 @@ set -euo pipefail
 echo "── AWANA Project Setup ──"
 echo ""
 
+# ── 0a. Create local config from example ──
+
+if [[ ! -f "config.ts" ]]; then
+  if [[ -f "config.example.ts" ]]; then
+    cp config.example.ts config.ts
+    echo "✓ Created config.ts from config.example.ts"
+    echo "  Edit config.ts to customize settings (inference profile, log retention, etc.)"
+    echo ""
+  else
+    echo "✗ config.example.ts not found — cannot create local config."
+    exit 1
+  fi
+else
+  echo "✓ config.ts already exists"
+  echo ""
+fi
+
 # ── 0. Precondition checks ──
 
 echo "Checking prerequisites..."

@@ -89,18 +89,6 @@ export function suppressEvaluationFindings(stack: Stack, runtimeName: string) {
   const acct = '<AWS::AccountId>';
   const region = stack.region;
 
-  // ── AgentCore custom resource — manages runtime lifecycle ──
-  NagSuppressions.addResourceSuppressionsByPath(stack,
-    `/${stack.node.id}/AgentRuntime/CustomResourcePolicy/Resource`,
-    [{ id: 'AwsSolutions-IAM5', reason: 'AgentCore runtime ARN not known until creation — scoped to account/region', appliesTo: [
-      `Resource::arn:aws:bedrock-agentcore:${region}:${acct}:runtime/*`,
-      `Resource::arn:aws:iam::${acct}:role/aws-service-role/network.bedrock-agentcore.amazonaws.com/*`,
-      `Resource::arn:aws:iam::${acct}:role/aws-service-role/runtime-identity.bedrock-agentcore.amazonaws.com/*`,
-      `Resource::arn:aws:iam::${acct}:role/aws-service-role/bedrock-agentcore.amazonaws.com/*`,
-      `Resource::arn:aws:s3:::cdk-hnb659fds-assets-${acct}-${region}/*`,
-    ]}],
-  );
-
   // ── AgentCore runtime role — S3 prompts, S3 inventory, Cost Explorer ──
   NagSuppressions.addResourceSuppressionsByPath(stack,
     `/${stack.node.id}/RuntimeRole/DefaultPolicy/Resource`,
